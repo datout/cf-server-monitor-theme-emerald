@@ -65,8 +65,12 @@ const {
 const topPingNetworks = computed(() => buildTopPingNetworks(props.node.ping))
 const ipv6PingNetworks = computed(() => buildIpv6PingNetworks(props.node.ping))
 const showIpv6 = computed(() => Boolean(props.node.ipv6?.trim()) || ipv6PingNetworks.value.length > 0 || pingStats.hasV6Data.value)
-const hasIpv4Address = computed(() => hasIPv4(props.node.ipv4) || pingStats.hasV4Data.value)
-const hasIpv6Address = computed(() => hasIPv6(props.node.ipv6) || pingStats.hasV6Data.value)
+const hasIpv4Address = computed(() =>
+  hasIPv4(props.node.ipv4) || topPingNetworks.value.length > 0 || pingStats.hasV4Data.value,
+)
+const hasIpv6Address = computed(() =>
+  hasIPv6(props.node.ipv6) || ipv6PingNetworks.value.length > 0 || pingStats.hasV6Data.value,
+)
 const ipStackLabel = computed(() => {
   if (hasIpv4Address.value && hasIpv6Address.value)
     return 'IPV4/6'
@@ -78,7 +82,7 @@ const ipStackLabel = computed(() => {
 })
 const ipStackBadgeClass = computed(() => {
   if (hasIpv4Address.value && hasIpv6Address.value)
-    return 'border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400'
+    return 'border-pink-500/25 bg-pink-500/10 text-pink-600 dark:text-pink-400'
   if (hasIpv6Address.value)
     return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
   return 'border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400'
@@ -111,20 +115,22 @@ function openPingDialog() {
     </template>
 
     <template #header-extra>
-      <div class="flex gap-1.5 items-center">
+      <div class="flex flex-col items-end gap-1 shrink-0">
+        <div class="flex gap-1.5 items-center">
+          <img :src="getOSImage(props.node.os, props.node.source_index)" :alt="getOSName(props.node.os)" class="size-4">
+          <img
+            v-if="hasRegion(props.node.region)" :src="getApiAssetUrl(`flags/${getRegionCode(props.node.region).toLowerCase()}.svg`, props.node.source_index)"
+            :alt="getRegionDisplayName(props.node.region)" class="size-5 shrink-0 rounded-sm drop-shadow-[0_0_2px_rgba(0,0,0,0.1)]"
+          >
+        </div>
         <Badge
           v-if="ipStackLabel"
           variant="outline"
-          class="!h-5 !rounded px-1.5 !text-[9px] font-semibold tracking-tight border"
+          class="!h-6 min-w-[52px] justify-center !rounded px-2 !text-[11px] font-semibold tracking-tight border"
           :class="ipStackBadgeClass"
         >
           {{ ipStackLabel }}
         </Badge>
-        <img :src="getOSImage(props.node.os, props.node.source_index)" :alt="getOSName(props.node.os)" class="size-4">
-        <img
-          v-if="hasRegion(props.node.region)" :src="getApiAssetUrl(`flags/${getRegionCode(props.node.region).toLowerCase()}.svg`, props.node.source_index)"
-          :alt="getRegionDisplayName(props.node.region)" class="size-5 shrink-0 rounded-sm drop-shadow-[0_0_2px_rgba(0,0,0,0.1)]"
-        >
       </div>
     </template>
 
@@ -288,7 +294,7 @@ function openPingDialog() {
                 >
                   <div class="truncate">
                     <span v-if="index" class="mx-1">·</span>
-                    <span class="font-medium" :class="net.toneClass">{{ net.latency }}</span>
+                    <span class="font-semibold text-[14px]" :class="net.toneClass">{{ net.latency }}</span>
                   </div>
                 </DataTooltip>
               </div>
@@ -296,8 +302,8 @@ function openPingDialog() {
                 N/A
               </div>
             </div>
-            <div v-if="showIpv6" class="flex items-center justify-between text-[12px]">
-              <span class="truncate font-medium">
+            <div v-if="showIpv6" class="flex items-center justify-between text-[14px]">
+              <span class="truncate font-semibold text-[13px]">
                 IPv6
               </span>
               <div class="border-t-2 border-dotted border-gray-500/10 mx-2 flex-1" />
@@ -331,16 +337,16 @@ function openPingDialog() {
                     <span class="text-muted-foreground shrink-0">延迟</span>
                     <div class="border-t-2 border-dotted border-gray-500/10 flex-1 min-w-2" />
                     <div class="flex items-center gap-1.5 shrink-0">
-                      <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-semibold leading-none border border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400">IPV4</span>
-                      <span class="font-semibold text-foreground/85 text-[12px]">{{ ipv4LatencyDisplay }}</span>
+                      <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400">IPV4</span>
+                      <span class="font-semibold text-foreground/95 text-[14px]">{{ ipv4LatencyDisplay }}</span>
                       <template v-if="showIpv6">
-                        <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-semibold leading-none border border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400">IPV6</span>
-                        <span class="font-semibold text-foreground/85 text-[12px]">{{ ipv6LatencyDisplay }}</span>
+                        <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400">IPV6</span>
+                        <span class="font-semibold text-foreground/95 text-[14px]">{{ ipv6LatencyDisplay }}</span>
                       </template>
                     </div>
                   </div>
                   <div class="flex items-center gap-1">
-                    <span class="inline-flex w-6 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[9px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
+                    <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
                     <div
                       class="grid h-1 flex-1 items-end gap-[1px]"
                       :style="{ gridTemplateColumns: `repeat(${ipv4LatencyRenderBars.length}, minmax(0, 1fr))` }"
@@ -358,7 +364,7 @@ function openPingDialog() {
                     v-if="showIpv6"
                     class="flex items-center gap-1"
                   >
-                    <span class="inline-flex w-6 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[9px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
+                    <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
                     <div
                       class="grid h-1 flex-1 items-end gap-[1px]"
                       :style="{ gridTemplateColumns: `repeat(${ipv6LatencyRenderBars.length}, minmax(0, 1fr))` }"
@@ -394,7 +400,7 @@ function openPingDialog() {
                     </div>
                   </div>
                   <div class="flex items-center gap-1">
-                    <span class="inline-flex w-6 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[9px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
+                    <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
                     <div
                       class="grid h-1 flex-1 items-end gap-[1px]"
                       :style="{ gridTemplateColumns: `repeat(${ipv4LossRenderBars.length}, minmax(0, 1fr))` }"
@@ -412,7 +418,7 @@ function openPingDialog() {
                     v-if="showIpv6"
                     class="flex items-center gap-1"
                   >
-                    <span class="inline-flex w-6 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[9px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
+                    <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
                     <div
                       class="grid h-1 flex-1 items-end gap-[1px]"
                       :style="{ gridTemplateColumns: `repeat(${ipv6LossRenderBars.length}, minmax(0, 1fr))` }"
