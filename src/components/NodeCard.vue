@@ -339,7 +339,6 @@ function openPingDialog() {
                       <span class="font-semibold text-foreground/95 text-[15px] truncate ml-auto">{{ ipv4LatencyDisplay }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
-                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
                       <div
                         class="grid h-1.5 flex-1 items-end gap-[1px]"
                         :style="{ gridTemplateColumns: `repeat(${ipv4LatencyRenderBars.length}, minmax(0, 1fr))` }"
@@ -360,7 +359,6 @@ function openPingDialog() {
                       <span class="font-semibold text-foreground/95 text-[15px] truncate ml-auto">{{ ipv6LatencyDisplay }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
-                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
                       <div
                         class="grid h-1.5 flex-1 items-end gap-[1px]"
                         :style="{ gridTemplateColumns: `repeat(${ipv6LatencyRenderBars.length}, minmax(0, 1fr))` }"
@@ -394,7 +392,6 @@ function openPingDialog() {
                       <span class="font-semibold text-foreground/95 text-[14px] truncate ml-auto">{{ ipv4LossDisplay }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
-                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
                       <div
                         class="grid h-1.5 flex-1 items-end gap-[1px]"
                         :style="{ gridTemplateColumns: `repeat(${ipv4LossRenderBars.length}, minmax(0, 1fr))` }"
@@ -415,7 +412,6 @@ function openPingDialog() {
                       <span class="font-semibold text-foreground/95 text-[14px] truncate ml-auto">{{ ipv6LossDisplay }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
-                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
                       <div
                         class="grid h-1.5 flex-1 items-end gap-[1px]"
                         :style="{ gridTemplateColumns: `repeat(${ipv6LossRenderBars.length}, minmax(0, 1fr))` }"
