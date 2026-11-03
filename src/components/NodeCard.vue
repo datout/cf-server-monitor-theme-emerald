@@ -64,13 +64,9 @@ const {
 } = useNodePingDisplay(props.node.uuid)
 const topPingNetworks = computed(() => buildTopPingNetworks(props.node.ping))
 const ipv6PingNetworks = computed(() => buildIpv6PingNetworks(props.node.ping))
-const showIpv6 = computed(() => Boolean(props.node.ipv6?.trim()) || ipv6PingNetworks.value.length > 0 || pingStats.hasV6Data.value)
-const hasIpv4Address = computed(() =>
-  hasIPv4(props.node.ipv4) || topPingNetworks.value.length > 0 || pingStats.hasV4Data.value,
-)
-const hasIpv6Address = computed(() =>
-  hasIPv6(props.node.ipv6) || ipv6PingNetworks.value.length > 0 || pingStats.hasV6Data.value,
-)
+const hasIpv4Address = computed(() => hasIPv4(props.node.ipv4))
+const hasIpv6Address = computed(() => hasIPv6(props.node.ipv6))
+const showIpv6 = computed(() => hasIpv6Address.value)
 const ipStackLabel = computed(() => {
   if (hasIpv4Address.value && hasIpv6Address.value)
     return 'IPV4/6'
@@ -327,109 +323,111 @@ function openPingDialog() {
               <div class="grid grid-cols-6 gap-x-3">
                 <div
                   role="button" tabindex="0"
-                  class="group/panel relative col-span-3 flex cursor-pointer flex-col gap-1 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  class="group/panel relative col-span-3 flex cursor-pointer flex-col gap-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   :title="latencyPanelTooltip" :aria-label="`${props.node.name} 延迟`"
                   @click.stop="openPingDialog"
                   @keydown.enter.stop.prevent="openPingDialog"
                   @keydown.space.stop.prevent="openPingDialog"
                 >
-                  <div class="flex items-center justify-between gap-2 text-[11px] leading-none relative">
+                  <div class="flex items-center gap-2 text-[11px] leading-none">
                     <span class="text-muted-foreground shrink-0">延迟</span>
                     <div class="border-t-2 border-dotted border-gray-500/10 flex-1 min-w-2" />
-                    <div class="flex items-center gap-1.5 shrink-0">
-                      <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400">IPV4</span>
-                      <span class="font-semibold text-foreground/95 text-[14px]">{{ ipv4LatencyDisplay }}</span>
-                      <template v-if="showIpv6">
-                        <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400">IPV6</span>
-                        <span class="font-semibold text-foreground/95 text-[14px]">{{ ipv6LatencyDisplay }}</span>
-                      </template>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400">IPV4</span>
+                      <span class="font-semibold text-foreground/95 text-[14px] truncate ml-auto">{{ ipv4LatencyDisplay }}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
+                      <div
+                        class="grid h-1.5 flex-1 items-end gap-[1px]"
+                        :style="{ gridTemplateColumns: `repeat(${ipv4LatencyRenderBars.length}, minmax(0, 1fr))` }"
+                      >
+                        <DataTooltip
+                          v-for="bar in ipv4LatencyRenderBars" :key="bar.key" placement="top"
+                          :content="bar.tooltip" class="h-full w-full"
+                          content-class="whitespace-pre-wrap w-max px-1.5 !leading-[1.2] text-[11px]"
+                        >
+                          <span class="block h-full w-full rounded-[1px]" :class="bar.className" />
+                        </DataTooltip>
+                      </div>
                     </div>
                   </div>
-                  <div class="flex items-center gap-1">
-                    <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
-                    <div
-                      class="grid h-1 flex-1 items-end gap-[1px]"
-                      :style="{ gridTemplateColumns: `repeat(${ipv4LatencyRenderBars.length}, minmax(0, 1fr))` }"
-                    >
-                      <DataTooltip
-                        v-for="bar in ipv4LatencyRenderBars" :key="bar.key" placement="top"
-                        :content="bar.tooltip" class="h-full w-full"
-                        content-class="whitespace-pre-wrap w-max px-1.5 !leading-[1.2] text-[11px]"
-                      >
-                        <span class="block h-full w-full rounded-[1px]" :class="bar.className" />
-                      </DataTooltip>
+                  <div v-if="showIpv6" class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400">IPV6</span>
+                      <span class="font-semibold text-foreground/95 text-[14px] truncate ml-auto">{{ ipv6LatencyDisplay }}</span>
                     </div>
-                  </div>
-                  <div
-                    v-if="showIpv6"
-                    class="flex items-center gap-1"
-                  >
-                    <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
-                    <div
-                      class="grid h-1 flex-1 items-end gap-[1px]"
-                      :style="{ gridTemplateColumns: `repeat(${ipv6LatencyRenderBars.length}, minmax(0, 1fr))` }"
-                    >
-                      <DataTooltip
-                        v-for="bar in ipv6LatencyRenderBars" :key="bar.key" placement="top"
-                        :content="bar.tooltip" class="h-full w-full"
-                        content-class="whitespace-pre-wrap w-max px-1.5 !leading-[1.2] text-[11px]"
+                    <div class="flex items-center gap-1.5">
+                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
+                      <div
+                        class="grid h-1.5 flex-1 items-end gap-[1px]"
+                        :style="{ gridTemplateColumns: `repeat(${ipv6LatencyRenderBars.length}, minmax(0, 1fr))` }"
                       >
-                        <span class="block h-full w-full rounded-[1px]" :class="bar.className" />
-                      </DataTooltip>
+                        <DataTooltip
+                          v-for="bar in ipv6LatencyRenderBars" :key="bar.key" placement="top"
+                          :content="bar.tooltip" class="h-full w-full"
+                          content-class="whitespace-pre-wrap w-max px-1.5 !leading-[1.2] text-[11px]"
+                        >
+                          <span class="block h-full w-full rounded-[1px]" :class="bar.className" />
+                        </DataTooltip>
+                      </div>
                     </div>
                   </div>
                 </div>
                 <div
                   role="button" tabindex="0"
-                  class="group/panel relative col-span-3 flex cursor-pointer flex-col gap-1 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  class="group/panel relative col-span-3 flex cursor-pointer flex-col gap-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   :title="lossPanelTooltip" :aria-label="`${props.node.name} 丢包`"
                   @click.stop="openPingDialog"
                   @keydown.enter.stop.prevent="openPingDialog"
                   @keydown.space.stop.prevent="openPingDialog"
                 >
-                  <div class="flex items-center justify-between gap-2 text-[11px] leading-none relative">
+                  <div class="flex items-center gap-2 text-[11px] leading-none">
                     <span class="text-muted-foreground shrink-0">丢包</span>
                     <div class="border-t-2 border-dotted border-gray-500/10 flex-1 min-w-2" />
-                    <div class="flex items-center gap-1.5 shrink-0">
-                      <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-semibold leading-none border border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400">IPV4</span>
-                      <span class="font-semibold text-foreground/85 text-[12px]">{{ ipv4LossDisplay }}</span>
-                      <template v-if="showIpv6">
-                        <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-semibold leading-none border border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400">IPV6</span>
-                        <span class="font-semibold text-foreground/85 text-[12px]">{{ ipv6LossDisplay }}</span>
-                      </template>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400">IPV4</span>
+                      <span class="font-semibold text-foreground/95 text-[13px] truncate ml-auto">{{ ipv4LossDisplay }}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
+                      <div
+                        class="grid h-1.5 flex-1 items-end gap-[1px]"
+                        :style="{ gridTemplateColumns: `repeat(${ipv4LossRenderBars.length}, minmax(0, 1fr))` }"
+                      >
+                        <DataTooltip
+                          v-for="bar in ipv4LossRenderBars" :key="bar.key" placement="top"
+                          :content="bar.tooltip" class="h-full w-full"
+                          content-class="whitespace-pre-wrap w-max px-1.5 !leading-[1.2] text-[11px]"
+                        >
+                          <span class="block h-full w-full rounded-[1px]" :class="bar.className" />
+                        </DataTooltip>
+                      </div>
                     </div>
                   </div>
-                  <div class="flex items-center gap-1">
-                    <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
-                    <div
-                      class="grid h-1 flex-1 items-end gap-[1px]"
-                      :style="{ gridTemplateColumns: `repeat(${ipv4LossRenderBars.length}, minmax(0, 1fr))` }"
-                    >
-                      <DataTooltip
-                        v-for="bar in ipv4LossRenderBars" :key="bar.key" placement="top"
-                        :content="bar.tooltip" class="h-full w-full"
-                        content-class="whitespace-pre-wrap w-max px-1.5 !leading-[1.2] text-[11px]"
-                      >
-                        <span class="block h-full w-full rounded-[1px]" :class="bar.className" />
-                      </DataTooltip>
+                  <div v-if="showIpv6" class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400">IPV6</span>
+                      <span class="font-semibold text-foreground/95 text-[13px] truncate ml-auto">{{ ipv6LossDisplay }}</span>
                     </div>
-                  </div>
-                  <div
-                    v-if="showIpv6"
-                    class="flex items-center gap-1"
-                  >
-                    <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
-                    <div
-                      class="grid h-1 flex-1 items-end gap-[1px]"
-                      :style="{ gridTemplateColumns: `repeat(${ipv6LossRenderBars.length}, minmax(0, 1fr))` }"
-                    >
-                      <DataTooltip
-                        v-for="bar in ipv6LossRenderBars" :key="bar.key" placement="top"
-                        :content="bar.tooltip" class="h-full w-full"
-                        content-class="whitespace-pre-wrap w-max px-1.5 !leading-[1.2] text-[11px]"
+                    <div class="flex items-center gap-1.5">
+                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
+                      <div
+                        class="grid h-1.5 flex-1 items-end gap-[1px]"
+                        :style="{ gridTemplateColumns: `repeat(${ipv6LossRenderBars.length}, minmax(0, 1fr))` }"
                       >
-                        <span class="block h-full w-full rounded-[1px]" :class="bar.className" />
-                      </DataTooltip>
+                        <DataTooltip
+                          v-for="bar in ipv6LossRenderBars" :key="bar.key" placement="top"
+                          :content="bar.tooltip" class="h-full w-full"
+                          content-class="whitespace-pre-wrap w-max px-1.5 !leading-[1.2] text-[11px]"
+                        >
+                          <span class="block h-full w-full rounded-[1px]" :class="bar.className" />
+                        </DataTooltip>
+                      </div>
                     </div>
                   </div>
                 </div>
