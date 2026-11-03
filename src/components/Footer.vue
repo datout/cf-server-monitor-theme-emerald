@@ -32,7 +32,7 @@ const showFiling = computed(() => showIcp.value || showPolice.value)
 
 <template>
   <VisitorInfoCard v-if="appStore.visitorInfoCardEnabled" />
-  <footer class="w-full sm:flex-row sm:gap-4 max-w-[1280px] mx-auto p-4">
+  <footer class="w-full sm:flex-row sm:gap-4 max-w-[1600px] mx-auto p-4">
     <div class="flex flex-row items-center justify-between  text-xs text-muted-foreground">
       <div class="flex gap-1 items-center">
         Powered by

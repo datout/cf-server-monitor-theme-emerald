@@ -104,7 +104,7 @@ function openPingDialog() {
             :class="[props.node.online ? 'bg-emerald-600' : 'bg-red-600']"
           />
         </div>
-        <div class="text-md font-bold flex-1 min-w-0 truncate">
+        <div class="text-lg font-bold flex-1 min-w-0 truncate">
           {{ props.node.name }}
         </div>
       </div>
@@ -122,7 +122,7 @@ function openPingDialog() {
         <Badge
           v-if="ipStackLabel"
           variant="outline"
-          class="!h-6 min-w-[52px] justify-center !rounded px-2 !text-[11px] font-semibold tracking-tight border"
+          class="!h-6 min-w-[56px] justify-center !rounded px-2 !text-[12px] font-semibold tracking-tight border"
           :class="ipStackBadgeClass"
         >
           {{ ipStackLabel }}
@@ -135,14 +135,14 @@ function openPingDialog() {
         <div class="gap-x-3 gap-y-1 grid grid-cols-2">
           <!-- CPU -->
           <div class="flex flex-col gap-1">
-            <div class="w-full text-xs flex flex-row justify-between">
+            <div class="w-full text-[13px] flex flex-row justify-between">
               <span class="text-muted-foreground">
                 CPU
               </span>
               <span>{{ (props.node.cpu ?? 0).toFixed(1) }}%</span>
             </div>
             <ProgressThin :percentage="props.node.cpu ?? 0" :status="cpuStatus" :height="4" />
-            <div class="text-[11px] text-muted-foreground truncate">
+            <div class="text-[12px] text-muted-foreground truncate">
               {{ props.node.load.toFixed(2) ?? 0 }}, {{ props.node.load5.toFixed(2) ?? 0 }}, {{
                 props.node.load15.toFixed(2) ?? 0 }}
             </div>
@@ -150,7 +150,7 @@ function openPingDialog() {
 
           <!-- 内存 -->
           <div class="flex flex-col gap-1">
-            <div class="w-full text-xs flex flex-row justify-between">
+            <div class="w-full text-[13px] flex flex-row justify-between">
               <span class="text-muted-foreground">
                 内存
               </span>
@@ -158,7 +158,7 @@ function openPingDialog() {
             </div>
             <ProgressThin :percentage="memPercentage" :status="memStatus" :height="4" />
             <DataTooltip placement="top" class="block" :content-class="[!props.node.swap && '!hidden']">
-              <div class="text-[11px] text-muted-foreground truncate">
+              <div class="text-[12px] text-muted-foreground truncate">
                 {{ formatBytes(props.node.ram ?? 0) }} / {{ formatBytes(props.node.mem_total ?? 0) }}
               </div>
               <template #content>
@@ -172,21 +172,21 @@ function openPingDialog() {
 
           <!-- 硬盘 -->
           <div class="flex flex-col gap-1">
-            <div class="w-full text-xs flex flex-row justify-between">
+            <div class="w-full text-[13px] flex flex-row justify-between">
               <span class="text-muted-foreground">
                 硬盘
               </span>
               <span>{{ diskPercentage.toFixed(1) }}%</span>
             </div>
             <ProgressThin :percentage="diskPercentage" :status="diskStatus" :height="4" />
-            <div class="text-[11px] text-muted-foreground truncate">
+            <div class="text-[12px] text-muted-foreground truncate">
               {{ formatBytes(props.node.disk ?? 0) }} / {{ formatBytes(props.node.disk_total ?? 0) }}
             </div>
           </div>
 
           <!-- 流量进度条 -->
           <div class="flex flex-col gap-1">
-            <div class="w-full text-xs flex flex-row justify-between">
+            <div class="w-full text-[13px] flex flex-row justify-between">
               <span class="text-muted-foreground">
                 流量
               </span>
@@ -194,7 +194,7 @@ function openPingDialog() {
             </div>
             <ProgressThin :percentage="trafficUsedPercentage" :status="trafficStatus" :height="4" />
             <DataTooltip placement="top" class="block">
-              <div class="text-[11px] text-muted-foreground truncate">
+              <div class="text-[12px] text-muted-foreground truncate">
                 {{ formatBytes(trafficUsed) }} /
                 <template v-if="showTrafficProgress(node)">
                   {{ formatBytes(props.node.traffic_limit) }}
@@ -205,7 +205,7 @@ function openPingDialog() {
               </div>
               <template #content>
                 <div class="flex items-center justify-between gap-3 whitespace-nowrap">
-                  <div class="text-[11px] flex flex-col">
+                  <div class="text-[12px] flex flex-col">
                     <div class="flex flex-row items-center gap-1">
                       <Icon icon="tabler:chevron-up" width="12" height="12" />
                       {{ formatBytes(props.node.net_monthly_up ?? 0) }}
@@ -220,7 +220,7 @@ function openPingDialog() {
             </DataTooltip>
           </div>
         </div>
-        <div class="relative text-[11px] text-muted-foreground">
+        <div class="relative text-[12px] text-muted-foreground">
           <div
             v-if="!props.node.online"
             class="absolute inset-0 z-10 flex flex-col items-center justify-center space-y-1"
@@ -277,7 +277,7 @@ function openPingDialog() {
                 </span>
               </DataTooltip>
             </div>
-            <div class="flex items-center justify-between text-[12px]">
+            <div class="flex items-center justify-between text-[13px]">
               <span class="truncate font-medium">
                 IPv4
               </span>
@@ -290,7 +290,7 @@ function openPingDialog() {
                 >
                   <div class="truncate">
                     <span v-if="index" class="mx-1">·</span>
-                    <span class="font-semibold text-[14px]" :class="net.toneClass">{{ net.latency }}</span>
+                    <span class="font-semibold text-[15px]" :class="net.toneClass">{{ net.latency }}</span>
                   </div>
                 </DataTooltip>
               </div>
@@ -298,8 +298,8 @@ function openPingDialog() {
                 N/A
               </div>
             </div>
-            <div v-if="showIpv6" class="flex items-center justify-between text-[14px]">
-              <span class="truncate font-semibold text-[13px]">
+            <div v-if="showIpv6" class="flex items-center justify-between text-[15px]">
+              <span class="truncate font-semibold text-[14px]">
                 IPv6
               </span>
               <div class="border-t-2 border-dotted border-gray-500/10 mx-2 flex-1" />
@@ -329,17 +329,17 @@ function openPingDialog() {
                   @keydown.enter.stop.prevent="openPingDialog"
                   @keydown.space.stop.prevent="openPingDialog"
                 >
-                  <div class="flex items-center gap-2 text-[11px] leading-none">
+                  <div class="flex items-center gap-2 text-[12px] leading-none">
                     <span class="text-muted-foreground shrink-0">延迟</span>
                     <div class="border-t-2 border-dotted border-gray-500/10 flex-1 min-w-2" />
                   </div>
                   <div class="flex flex-col gap-1">
                     <div class="flex items-center gap-2 min-w-0">
-                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400">IPV4</span>
-                      <span class="font-semibold text-foreground/95 text-[14px] truncate ml-auto">{{ ipv4LatencyDisplay }}</span>
+                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none border border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400">IPV4</span>
+                      <span class="font-semibold text-foreground/95 text-[15px] truncate ml-auto">{{ ipv4LatencyDisplay }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
-                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
+                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
                       <div
                         class="grid h-1.5 flex-1 items-end gap-[1px]"
                         :style="{ gridTemplateColumns: `repeat(${ipv4LatencyRenderBars.length}, minmax(0, 1fr))` }"
@@ -356,11 +356,11 @@ function openPingDialog() {
                   </div>
                   <div v-if="showIpv6" class="flex flex-col gap-1">
                     <div class="flex items-center gap-2 min-w-0">
-                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400">IPV6</span>
-                      <span class="font-semibold text-foreground/95 text-[14px] truncate ml-auto">{{ ipv6LatencyDisplay }}</span>
+                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none border border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400">IPV6</span>
+                      <span class="font-semibold text-foreground/95 text-[15px] truncate ml-auto">{{ ipv6LatencyDisplay }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
-                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
+                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
                       <div
                         class="grid h-1.5 flex-1 items-end gap-[1px]"
                         :style="{ gridTemplateColumns: `repeat(${ipv6LatencyRenderBars.length}, minmax(0, 1fr))` }"
@@ -384,17 +384,17 @@ function openPingDialog() {
                   @keydown.enter.stop.prevent="openPingDialog"
                   @keydown.space.stop.prevent="openPingDialog"
                 >
-                  <div class="flex items-center gap-2 text-[11px] leading-none">
+                  <div class="flex items-center gap-2 text-[12px] leading-none">
                     <span class="text-muted-foreground shrink-0">丢包</span>
                     <div class="border-t-2 border-dotted border-gray-500/10 flex-1 min-w-2" />
                   </div>
                   <div class="flex flex-col gap-1">
                     <div class="flex items-center gap-2 min-w-0">
-                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400">IPV4</span>
-                      <span class="font-semibold text-foreground/95 text-[13px] truncate ml-auto">{{ ipv4LossDisplay }}</span>
+                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none border border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400">IPV4</span>
+                      <span class="font-semibold text-foreground/95 text-[14px] truncate ml-auto">{{ ipv4LossDisplay }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
-                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
+                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold leading-none border border-sky-500/15 bg-sky-500/5 text-sky-600/80 dark:text-sky-400/80">4</span>
                       <div
                         class="grid h-1.5 flex-1 items-end gap-[1px]"
                         :style="{ gridTemplateColumns: `repeat(${ipv4LossRenderBars.length}, minmax(0, 1fr))` }"
@@ -411,11 +411,11 @@ function openPingDialog() {
                   </div>
                   <div v-if="showIpv6" class="flex flex-col gap-1">
                     <div class="flex items-center gap-2 min-w-0">
-                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400">IPV6</span>
-                      <span class="font-semibold text-foreground/95 text-[13px] truncate ml-auto">{{ ipv6LossDisplay }}</span>
+                      <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none border border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400">IPV6</span>
+                      <span class="font-semibold text-foreground/95 text-[14px] truncate ml-auto">{{ ipv6LossDisplay }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
-                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
+                      <span class="inline-flex w-7 shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold leading-none border border-violet-500/15 bg-violet-500/5 text-violet-600/80 dark:text-violet-400/80">6</span>
                       <div
                         class="grid h-1.5 flex-1 items-end gap-[1px]"
                         :style="{ gridTemplateColumns: `repeat(${ipv6LossRenderBars.length}, minmax(0, 1fr))` }"
@@ -438,7 +438,7 @@ function openPingDialog() {
         <div v-if="customTags.length > 0" class="flex shrink-0 flex-wrap gap-1 items-center">
           <Badge
             v-for="(tag, index) in customTags" :key="index" variant="outline"
-            class="!text-[11px] rounded text-muted-foreground border-muted-foreground/10 px-1.5"
+            class="!text-[12px] rounded text-muted-foreground border-muted-foreground/10 px-1.5"
           >
             {{ tag }}
           </Badge>

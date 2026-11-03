@@ -53,7 +53,7 @@ const sitename = computed(() => appStore.publicSettings?.sitename || 'CF Server 
     class="transition-all duration-200 top-0 sticky z-10 border-b border-transparent"
     :class="isScrolled ? 'backdrop-blur-xl' : 'bg-transparent'"
   >
-    <div class="px-4 flex-between h-14 max-w-[1280px] mx-auto">
+    <div class="px-4 flex-between h-14 max-w-[1600px] mx-auto">
       <div class="flex items-center gap-3 cursor-pointer" @click="router.push('/')">
         <Avatar class="size-8 rounded-none">
           <AvatarImage :src="siteFavicon" :alt="sitename" class="rounded-none" />
