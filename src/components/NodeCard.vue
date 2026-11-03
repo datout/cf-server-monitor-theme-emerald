@@ -65,8 +65,8 @@ const {
 const topPingNetworks = computed(() => buildTopPingNetworks(props.node.ping))
 const ipv6PingNetworks = computed(() => buildIpv6PingNetworks(props.node.ping))
 const showIpv6 = computed(() => Boolean(props.node.ipv6?.trim()) || ipv6PingNetworks.value.length > 0 || pingStats.hasV6Data.value)
-const hasIpv4Address = computed(() => hasIPv4(props.node.ipv4))
-const hasIpv6Address = computed(() => hasIPv6(props.node.ipv6))
+const hasIpv4Address = computed(() => hasIPv4(props.node.ipv4) || pingStats.hasV4Data.value)
+const hasIpv6Address = computed(() => hasIPv6(props.node.ipv6) || pingStats.hasV6Data.value)
 const ipStackLabel = computed(() => {
   if (hasIpv4Address.value && hasIpv6Address.value)
     return 'IPV4/6'
