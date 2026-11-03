@@ -111,14 +111,7 @@ function openPingDialog() {
     </template>
 
     <template #header-extra>
-      <div class="flex flex-col items-end gap-1 shrink-0">
-        <div class="flex gap-1.5 items-center">
-          <img :src="getOSImage(props.node.os, props.node.source_index)" :alt="getOSName(props.node.os)" class="size-4">
-          <img
-            v-if="hasRegion(props.node.region)" :src="getApiAssetUrl(`flags/${getRegionCode(props.node.region).toLowerCase()}.svg`, props.node.source_index)"
-            :alt="getRegionDisplayName(props.node.region)" class="size-5 shrink-0 rounded-sm drop-shadow-[0_0_2px_rgba(0,0,0,0.1)]"
-          >
-        </div>
+      <div class="flex gap-1.5 items-center shrink-0">
         <Badge
           v-if="ipStackLabel"
           variant="outline"
@@ -127,6 +120,11 @@ function openPingDialog() {
         >
           {{ ipStackLabel }}
         </Badge>
+        <img :src="getOSImage(props.node.os, props.node.source_index)" :alt="getOSName(props.node.os)" class="size-4">
+        <img
+          v-if="hasRegion(props.node.region)" :src="getApiAssetUrl(`flags/${getRegionCode(props.node.region).toLowerCase()}.svg`, props.node.source_index)"
+          :alt="getRegionDisplayName(props.node.region)" class="size-5 shrink-0 rounded-sm drop-shadow-[0_0_2px_rgba(0,0,0,0.1)]"
+        >
       </div>
     </template>
 
@@ -277,8 +275,8 @@ function openPingDialog() {
                 </span>
               </DataTooltip>
             </div>
-            <div class="flex items-center justify-between text-[13px]">
-              <span class="truncate font-medium">
+            <div class="flex items-center justify-between text-[15px]">
+              <span class="truncate font-semibold text-[15px]">
                 IPv4
               </span>
               <div class="border-t-2 border-dotted border-gray-500/10 mx-2 flex-1" />
@@ -299,7 +297,7 @@ function openPingDialog() {
               </div>
             </div>
             <div v-if="showIpv6" class="flex items-center justify-between text-[15px]">
-              <span class="truncate font-semibold text-[14px]">
+              <span class="truncate font-semibold text-[15px]">
                 IPv6
               </span>
               <div class="border-t-2 border-dotted border-gray-500/10 mx-2 flex-1" />
@@ -311,7 +309,7 @@ function openPingDialog() {
                 >
                   <div class="truncate">
                     <span v-if="index" class="mx-1">·</span>
-                    <span class="font-medium" :class="net.toneClass">{{ net.latency }}</span>
+                    <span class="font-semibold text-[15px]" :class="net.toneClass">{{ net.latency }}</span>
                   </div>
                 </DataTooltip>
               </div>
@@ -389,7 +387,7 @@ function openPingDialog() {
                   <div class="flex flex-col gap-1">
                     <div class="flex items-center gap-2 min-w-0">
                       <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none border border-sky-500/20 bg-sky-500/10 text-sky-600 dark:text-sky-400">IPV4</span>
-                      <span class="font-semibold text-foreground/95 text-[14px] truncate ml-auto">{{ ipv4LossDisplay }}</span>
+                      <span class="font-semibold text-foreground/95 text-[15px] truncate ml-auto">{{ ipv4LossDisplay }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
                       <div
@@ -409,7 +407,7 @@ function openPingDialog() {
                   <div v-if="showIpv6" class="flex flex-col gap-1">
                     <div class="flex items-center gap-2 min-w-0">
                       <span class="inline-flex shrink-0 items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-semibold leading-none border border-violet-500/20 bg-violet-500/10 text-violet-600 dark:text-violet-400">IPV6</span>
-                      <span class="font-semibold text-foreground/95 text-[14px] truncate ml-auto">{{ ipv6LossDisplay }}</span>
+                      <span class="font-semibold text-foreground/95 text-[15px] truncate ml-auto">{{ ipv6LossDisplay }}</span>
                     </div>
                     <div class="flex items-center gap-1.5">
                       <div
