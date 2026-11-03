@@ -42,7 +42,6 @@ jobs:
           rm -rf /tmp/theme-build
           mkdir -p /tmp/theme-build
           cp -a dist/. /tmp/theme-build/
-
           cd /tmp/theme-build
           git init
           git config user.name "github-actions[bot]"

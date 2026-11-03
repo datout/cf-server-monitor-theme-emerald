@@ -409,12 +409,14 @@ export function formatPriceWithCycle(
  * 检查是否有 IPv4
  */
 export function hasIPv4(ipv4: string | undefined | null): boolean {
-  return !!ipv4 && ipv4.trim() !== ''
+  const value = String(ipv4 ?? '').trim().toLowerCase()
+  return value !== '' && value !== '0' && value !== 'false'
 }
 
 /**
  * 检查是否有 IPv6
  */
 export function hasIPv6(ipv6: string | undefined | null): boolean {
-  return !!ipv6 && ipv6.trim() !== ''
+  const value = String(ipv6 ?? '').trim().toLowerCase()
+  return value !== '' && value !== '0' && value !== 'false'
 }
