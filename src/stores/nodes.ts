@@ -1,4 +1,4 @@
-import type { Client, NodeStatus, NodeStatusPing } from '@/utils/rpc'
+import type { Client, NodeStatus, NodeStatusPing, PingRecord } from '@/utils/rpc'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { parseNodeGroups } from '@/utils/groupHelper'
@@ -8,8 +8,10 @@ export type TrafficLimitType = 'up' | 'down' | 'min' | 'max' | 'sum'
 
 export interface PingHistoryPoint {
   time: string
-  latency: number | null
-  loss: number | null
+  latencyV4: number | null
+  lossV4: number | null
+  latencyV6: number | null
+  lossV6: number | null
 }
 
 /** 节点完整信息（合并 Client 和 Status） */
@@ -317,53 +319,117 @@ const useNodesStore = defineStore('nodes', () => {
   }
 
   /**
-   * 记录一次 ping 采样。按配置的窗口桶长对齐 status.time 后按桶 upsert：
-   * 已存在同桶点时合并（新样本有效值覆盖，无效保留旧值），否则按时间顺序插入新桶并截断到配置的桶数。
+   * 记录一次 ping 采样。按配置的窗口桶长对齐 status.time 后按桶 upsert，IPv4/IPv6 独立统计：
+   * IPv4 使用 CT/CU/CM/BGP，IPv6 使用 Node 1~4（主题约定为 IPv6 探测节点）。
    */
   function recordPingSample(uuid: string, status: NodeStatus): void {
     const sampleTime = Date.parse(status.time)
     if (!Number.isFinite(sampleTime))
       return
 
-    const pingEntries = Object.values(status.ping ?? {})
-    const latencyValues = pingEntries
-      .map(entry => entry.latest)
-      .filter(value => Number.isFinite(value) && value > 0)
-    const lossValues = pingEntries
-      .map(entry => entry.loss)
-      .filter(value => Number.isFinite(value) && value >= 0)
+    const ping = status.ping ?? {}
+    const averagePingField = (keys: readonly string[], field: 'latest' | 'loss', valid: (value: number) => boolean): number | null => {
+      const values = keys
+        .map(key => ping[key]?.[field])
+        .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && valid(value))
+      return values.length
+        ? values.reduce((sum, value) => sum + value, 0) / values.length
+        : null
+    }
 
-    if (!latencyValues.length && !lossValues.length)
+    const latencyV4 = averagePingField(['ct', 'cu', 'cm', 'bd'], 'latest', value => value > 0)
+    const lossV4 = averagePingField(['ct', 'cu', 'cm', 'bd'], 'loss', value => value >= 0)
+    const latencyV6 = averagePingField(['node_1', 'node_2', 'node_3', 'node_4'], 'latest', value => value > 0)
+    const lossV6 = averagePingField(['node_1', 'node_2', 'node_3', 'node_4'], 'loss', value => value >= 0)
+
+    if (latencyV4 === null && lossV4 === null && latencyV6 === null && lossV6 === null)
       return
 
     const bucketTs = Math.floor(sampleTime / pingHistoryBucketMs()) * pingHistoryBucketMs()
-    const latency = latencyValues.length
-      ? latencyValues.reduce((sum, value) => sum + value, 0) / latencyValues.length
-      : null
-    const loss = lossValues.length
-      ? lossValues.reduce((sum, value) => sum + value, 0) / lossValues.length
-      : null
     const bucketTime = new Date(bucketTs).toISOString()
 
     const history = pingHistoryByUuid.value[uuid] ?? []
     const point = history.find(item => item.time === bucketTime)
     if (point) {
-      const nextLatency = latency ?? point.latency
-      const nextLoss = loss ?? point.loss
-      if (nextLatency === point.latency && nextLoss === point.loss)
+      const nextPoint = {
+        time: point.time,
+        latencyV4: latencyV4 ?? point.latencyV4,
+        lossV4: lossV4 ?? point.lossV4,
+        latencyV6: latencyV6 ?? point.latencyV6,
+        lossV6: lossV6 ?? point.lossV6,
+      }
+      if (nextPoint.latencyV4 === point.latencyV4
+        && nextPoint.lossV4 === point.lossV4
+        && nextPoint.latencyV6 === point.latencyV6
+        && nextPoint.lossV6 === point.lossV6)
         return
       pingHistoryByUuid.value = {
         ...pingHistoryByUuid.value,
-        [uuid]: history.map(item => item === point
-          ? { time: point.time, latency: nextLatency, loss: nextLoss }
-          : item),
+        [uuid]: history.map(item => item === point ? nextPoint : item),
       }
       return
     }
 
     pingHistoryByUuid.value = {
       ...pingHistoryByUuid.value,
-      [uuid]: [...history, { time: bucketTime, latency, loss }]
+      [uuid]: [...history, { time: bucketTime, latencyV4, lossV4, latencyV6, lossV6 }]
+        .sort((a, b) => Date.parse(a.time) - Date.parse(b.time))
+        .slice(-pingHistoryConfig.value.points),
+    }
+  }
+
+  /**
+   * 用后端完整 Ping 历史补齐 IPv6 Node 1~4。后端 /api/servers 的窗口目前只提供 IPv4，
+   * 因此这里仅更新 IPv6 字段，并保留已有的 IPv4 历史。
+   */
+  function hydratePingHistory(uuid: string, records: PingRecord[]): void {
+    if (!records.length)
+      return
+
+    const buckets = new Map<number, { latency: number[], loss: number[] }>()
+    for (const record of records) {
+      if (record.task_id < 5 || record.task_id > 8)
+        continue
+
+      const timestamp = Date.parse(record.time)
+      if (!Number.isFinite(timestamp))
+        continue
+
+      const bucketTs = Math.floor(timestamp / pingHistoryBucketMs()) * pingHistoryBucketMs()
+      const bucket = buckets.get(bucketTs) ?? { latency: [], loss: [] }
+      if (Number.isFinite(record.value) && record.value > 0)
+        bucket.latency.push(record.value)
+      if (typeof record.loss === 'number' && Number.isFinite(record.loss) && record.loss >= 0)
+        bucket.loss.push(record.loss)
+      buckets.set(bucketTs, bucket)
+    }
+
+    if (!buckets.size)
+      return
+
+    const history = pingHistoryByUuid.value[uuid] ?? []
+    const merged = new Map(history.map(point => [point.time, point]))
+    for (const [bucketTs, bucket] of buckets) {
+      const time = new Date(bucketTs).toISOString()
+      const point = merged.get(time)
+      const latencyV6 = bucket.latency.length
+        ? bucket.latency.reduce((sum, value) => sum + value, 0) / bucket.latency.length
+        : null
+      const lossV6 = bucket.loss.length
+        ? bucket.loss.reduce((sum, value) => sum + value, 0) / bucket.loss.length
+        : null
+      merged.set(time, {
+        time,
+        latencyV4: point?.latencyV4 ?? null,
+        lossV4: point?.lossV4 ?? null,
+        latencyV6,
+        lossV6,
+      })
+    }
+
+    pingHistoryByUuid.value = {
+      ...pingHistoryByUuid.value,
+      [uuid]: [...merged.values()]
         .sort((a, b) => Date.parse(a.time) - Date.parse(b.time))
         .slice(-pingHistoryConfig.value.points),
     }
@@ -414,17 +480,21 @@ const useNodesStore = defineStore('nodes', () => {
       }
 
       if (status) {
-        // 开关开启且后端返回窗口时直接作为历史（已含最新桶），
-        // 否则（开关关闭 / 窗口缺失）由实时样本按单条 ping 值逐步累积
+        // 后端历史窗口目前只包含 IPv4 的 CT/CU/CM/BGP。先载入 IPv4，
+        // 再用当前实时样本补齐 IPv6（Node 1~4）并更新最新 IPv4 桶。
         if (pingHistoryConfig.value.showThreeNetDetails && status.pingWindow?.length) {
           pingHistoryByUuid.value = {
             ...pingHistoryByUuid.value,
-            [uuid]: status.pingWindow.slice(-pingHistoryConfig.value.points),
+            [uuid]: status.pingWindow.slice(-pingHistoryConfig.value.points).map(point => ({
+              time: point.time,
+              latencyV4: point.latency,
+              lossV4: point.loss,
+              latencyV6: null,
+              lossV6: null,
+            })),
           }
         }
-        else {
-          recordPingSample(uuid, status)
-        }
+        recordPingSample(uuid, status)
       }
     })
 
@@ -571,6 +641,7 @@ const useNodesStore = defineStore('nodes', () => {
     initNodes,
     updateNodeStatuses,
     recordPingSample,
+    hydratePingHistory,
     configurePingHistory,
     updateNodeClients,
     sortNodesByWeight,

@@ -3,14 +3,20 @@ import type { PingHistoryPoint } from '@/stores/nodes'
 import { computed, ref, toValue } from 'vue'
 import { useNodesStore } from '@/stores/nodes'
 
+export type PingFamily = 'ipv4' | 'ipv6'
+
 export interface NodePingHistoryPoint extends PingHistoryPoint {}
 
 export interface NodePingStatsState {
-  avgLatency: number
-  avgLoss: number
-  avgVolatility: number
+  avgLatencyV4: number
+  avgLossV4: number
+  avgLatencyV6: number
+  avgLossV6: number
+  avgVolatilityV4: number
+  avgVolatilityV6: number
   history: NodePingHistoryPoint[]
-  hasData: boolean
+  hasV4Data: boolean
+  hasV6Data: boolean
 }
 
 export const NODE_PING_BAR_COUNT = 10
@@ -35,19 +41,29 @@ export function useNodePingStats(
 
   const stats = computed<NodePingStatsState>(() => {
     const points = history.value
-    const latencyValues = points
-      .map(point => point.latency)
+    const latencyV4 = points
+      .map(point => point.latencyV4)
       .filter((value): value is number => value !== null)
-    const lossValues = points
-      .map(point => point.loss)
+    const lossV4 = points
+      .map(point => point.lossV4)
+      .filter((value): value is number => value !== null)
+    const latencyV6 = points
+      .map(point => point.latencyV6)
+      .filter((value): value is number => value !== null)
+    const lossV6 = points
+      .map(point => point.lossV6)
       .filter((value): value is number => value !== null)
 
     return {
-      avgLatency: average(latencyValues),
-      avgLoss: average(lossValues),
-      avgVolatility: 0,
+      avgLatencyV4: average(latencyV4),
+      avgLossV4: average(lossV4),
+      avgLatencyV6: average(latencyV6),
+      avgLossV6: average(lossV6),
+      avgVolatilityV4: 0,
+      avgVolatilityV6: 0,
       history: points,
-      hasData: Boolean(latencyValues.length || lossValues.length),
+      hasV4Data: Boolean(latencyV4.length || lossV4.length),
+      hasV6Data: Boolean(latencyV6.length || lossV6.length),
     }
   })
 
@@ -56,9 +72,13 @@ export function useNodePingStats(
     loading: ref(false),
     error: ref<string | null>(null),
     history,
-    avgLatency: computed(() => stats.value.avgLatency),
-    avgLoss: computed(() => stats.value.avgLoss),
-    avgVolatility: computed(() => stats.value.avgVolatility),
-    hasData: computed(() => stats.value.hasData),
+    avgLatencyV4: computed(() => stats.value.avgLatencyV4),
+    avgLossV4: computed(() => stats.value.avgLossV4),
+    avgLatencyV6: computed(() => stats.value.avgLatencyV6),
+    avgLossV6: computed(() => stats.value.avgLossV6),
+    avgVolatilityV4: computed(() => stats.value.avgVolatilityV4),
+    avgVolatilityV6: computed(() => stats.value.avgVolatilityV6),
+    hasV4Data: computed(() => stats.value.hasV4Data),
+    hasV6Data: computed(() => stats.value.hasV6Data),
   }
 }

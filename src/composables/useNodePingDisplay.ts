@@ -1,7 +1,7 @@
 import type { MaybeRefOrGetter } from 'vue'
 import type { NodeStatusPing } from '@/utils/rpc'
 import { computed, toValue } from 'vue'
-import { NODE_PING_BAR_COUNT, useNodePingStats } from '@/composables/useNodePingStats'
+import { NODE_PING_BAR_COUNT, type PingFamily, useNodePingStats } from '@/composables/useNodePingStats'
 import { formatDateTime } from '@/utils/helper'
 import { getPingToneClass, PING_PROVIDERS } from '@/utils/nodeHelper'
 
@@ -17,8 +17,6 @@ interface UseNodePingDisplayOptions {
   enabled?: MaybeRefOrGetter<boolean>
   loadingDisplayText?: string
   emptyDisplayText?: string
-  loadingPanelTooltipText?: Partial<Record<NodePingMetric, string>>
-  emptyPanelTooltipText?: Partial<Record<NodePingMetric, string>>
 }
 
 function getLatencyToneClass(latency: number): string {
@@ -53,9 +51,12 @@ export interface TopPingNetwork {
   tooltip: string
 }
 
+export interface Ipv6PingNetwork extends TopPingNetwork {}
+
+const IPV6_PING_KEYS = ['node_1', 'node_2', 'node_3', 'node_4'] as const
+
 /**
- * 首页卡片/列表「三网」行：只取 CT/CU/CM（前 3 个），并按存在性过滤；
- * ping_x / loss_x 皆不存在时不会进入 ping map，对应项不展示。
+ * 首页卡片/列表「三网」行：只取 CT/CU/CM，并按存在性过滤。
  */
 export function buildTopPingNetworks(ping?: Record<string, NodeStatusPing>): TopPingNetwork[] {
   if (!ping)
@@ -82,6 +83,36 @@ export function buildTopPingNetworks(ping?: Record<string, NodeStatusPing>): Top
   })
 }
 
+/**
+ * IPv6 行使用 Node 1~4。主题约定这些自定义节点用于 IPv6 探测。
+ * 未配置/未返回的节点不会占位。
+ */
+export function buildIpv6PingNetworks(ping?: Record<string, NodeStatusPing>): Ipv6PingNetwork[] {
+  if (!ping)
+    return []
+
+  return IPV6_PING_KEYS.flatMap((key) => {
+    const entry = ping[key]
+    if (!entry)
+      return []
+
+    const latency = entry.latest ?? 0
+    const loss = entry.loss ?? 100
+    const available = latency > 0 && loss < 100
+    const fallbackName = key.replace('_', ' ').replace('node ', 'IPv6 ')
+
+    return [{
+      key,
+      name: entry.name || fallbackName,
+      latency: available ? `${Math.round(latency)}ms` : '--',
+      toneClass: getPingToneClass(latency, available),
+      tooltip: available
+        ? `${entry.name || fallbackName}\n${Math.round(latency)} ms`
+        : `${entry.name || fallbackName}\n暂无响应`,
+    }]
+  })
+}
+
 export function useNodePingDisplay(
   uuid: MaybeRefOrGetter<string>,
   options: UseNodePingDisplayOptions = {},
@@ -94,10 +125,9 @@ export function useNodePingDisplay(
   })
 
   /**
-   * 将一小时数据集按时间平均划分为 NODE_PING_BAR_COUNT 根柱子，
-   * 每根柱取段内数据点的平均值（无论段内几条数据）。
+   * 将一小时数据集按时间平均划分为 NODE_PING_BAR_COUNT 根柱子，按 IPv4/IPv6 分开统计。
    */
-  function buildPingBars(metric: NodePingMetric): NodePingBar[] {
+  function buildPingBars(metric: NodePingMetric, family: PingFamily): NodePingBar[] {
     const points = pingStats.history.value
     if (!points.length)
       return []
@@ -116,108 +146,106 @@ export function useNodePingDisplay(
         return time >= segmentStart && time < segmentEnd
       })
 
-      const latencyValues = segmentPoints
-        .map(point => point.latency)
-        .filter((value): value is number => value !== null)
-      const lossValues = segmentPoints
-        .map(point => point.loss)
+      const values = segmentPoints
+        .map((point) => {
+          if (metric === 'latency')
+            return family === 'ipv4' ? point.latencyV4 : point.latencyV6
+          return family === 'ipv4' ? point.lossV4 : point.lossV6
+        })
         .filter((value): value is number => value !== null)
 
-      const value = metric === 'latency'
-        ? latencyValues.length
-          ? latencyValues.reduce((sum, v) => sum + v, 0) / latencyValues.length
-          : null
-        : lossValues.length
-          ? lossValues.reduce((sum, v) => sum + v, 0) / lossValues.length
-          : null
+      const value = values.length
+        ? values.reduce((sum, v) => sum + v, 0) / values.length
+        : null
       const segmentTime = new Date(segmentStart).toISOString()
+      const familyLabel = family === 'ipv4' ? 'IPv4' : 'IPv6'
 
       bars.push({
-        key: `${segmentTime}-${index}`,
+        key: `${family}-${metric}-${segmentTime}-${index}`,
         className: value === null
           ? 'bg-muted-foreground/15'
           : metric === 'latency'
             ? getLatencyToneClass(value)
             : getLossToneClass(value),
         tooltip: value === null
-          ? `${formatDateTime(segmentTime, 'HH:mm:ss')} N/A`
+          ? `${familyLabel} ${formatDateTime(segmentTime, 'HH:mm:ss')} N/A`
           : metric === 'latency'
-            ? `${formatDateTime(segmentTime, 'HH:mm:ss')}\n${Math.round(value)} ms`
-            : `${formatDateTime(segmentTime, 'HH:mm:ss')}\n${value.toFixed(1)}%`,
+            ? `${familyLabel} ${formatDateTime(segmentTime, 'HH:mm:ss')}\n${Math.round(value)} ms`
+            : `${familyLabel} ${formatDateTime(segmentTime, 'HH:mm:ss')}\n${value.toFixed(1)}%`,
       })
     }
 
     return bars
   }
 
-  function buildEmptyPingBars(metric: NodePingMetric): NodePingBar[] {
+  function buildEmptyPingBars(metric: NodePingMetric, family: PingFamily): NodePingBar[] {
     const tooltip = pingStats.loading.value
       ? '加载中'
       : pingStats.error.value
         ? '加载失败'
         : !pingStatsEnabled.value
-            ? '未启用记录'
-            : metric === 'latency'
-              ? 'N/A'
-              : 'N/A'
+          ? '未启用记录'
+          : 'N/A'
 
     return Array.from({ length: NODE_PING_BAR_COUNT }, (_, index) => ({
-      key: `${metric}-empty-${index}`,
+      key: `${family}-${metric}-empty-${index}`,
       className: 'bg-muted-foreground/10',
       tooltip,
     }))
   }
 
-  const latencyBars = computed(() => buildPingBars('latency'))
-  const lossBars = computed(() => buildPingBars('loss'))
-  const latencyRenderBars = computed(() => latencyBars.value.length ? latencyBars.value : buildEmptyPingBars('latency'))
-  const lossRenderBars = computed(() => lossBars.value.length ? lossBars.value : buildEmptyPingBars('loss'))
+  const ipv4LatencyBars = computed(() => buildPingBars('latency', 'ipv4'))
+  const ipv4LossBars = computed(() => buildPingBars('loss', 'ipv4'))
+  const ipv6LatencyBars = computed(() => buildPingBars('latency', 'ipv6'))
+  const ipv6LossBars = computed(() => buildPingBars('loss', 'ipv6'))
 
-  const latencyDisplay = computed(() => {
-    if (pingStats.hasData.value)
-      return `${Math.round(pingStats.avgLatency.value)} ms`
+  const ipv4LatencyRenderBars = computed(() => ipv4LatencyBars.value.length ? ipv4LatencyBars.value : buildEmptyPingBars('latency', 'ipv4'))
+  const ipv4LossRenderBars = computed(() => ipv4LossBars.value.length ? ipv4LossBars.value : buildEmptyPingBars('loss', 'ipv4'))
+  const ipv6LatencyRenderBars = computed(() => ipv6LatencyBars.value.length ? ipv6LatencyBars.value : buildEmptyPingBars('latency', 'ipv6'))
+  const ipv6LossRenderBars = computed(() => ipv6LossBars.value.length ? ipv6LossBars.value : buildEmptyPingBars('loss', 'ipv6'))
+
+  const ipv4LatencyDisplay = computed(() => {
+    if (pingStats.hasV4Data.value)
+      return `${Math.round(pingStats.avgLatencyV4.value)} ms`
     if (pingStats.loading.value)
       return options.loadingDisplayText ?? '加载中'
     return options.emptyDisplayText ?? '-'
   })
 
-  const lossDisplay = computed(() => {
-    if (pingStats.hasData.value)
-      return `${pingStats.avgLoss.value.toFixed(1)}%`
+  const ipv4LossDisplay = computed(() => {
+    if (pingStats.hasV4Data.value)
+      return `${pingStats.avgLossV4.value.toFixed(1)}%`
     if (pingStats.loading.value)
       return options.loadingDisplayText ?? '加载中'
     return options.emptyDisplayText ?? '-'
   })
+
+  const ipv6LatencyDisplay = computed(() => pingStats.hasV6Data.value ? `${Math.round(pingStats.avgLatencyV6.value)} ms` : '—')
+  const ipv6LossDisplay = computed(() => pingStats.hasV6Data.value ? `${pingStats.avgLossV6.value.toFixed(1)}%` : '—')
 
   const latencyPanelTooltip = computed(() => {
-    if (!pingStats.hasData.value) {
-      if (pingStats.loading.value)
-        return options.loadingPanelTooltipText?.latency ?? ''
-      return options.emptyPanelTooltipText?.latency ?? ''
-    }
-    return `平均延迟 ${Math.round(pingStats.avgLatency.value)} ms`
+    const v4 = pingStats.hasV4Data.value ? `IPv4 平均延迟 ${Math.round(pingStats.avgLatencyV4.value)} ms` : 'IPv4 暂无数据'
+    const v6 = pingStats.hasV6Data.value ? `IPv6 平均延迟 ${Math.round(pingStats.avgLatencyV6.value)} ms` : 'IPv6 暂无数据'
+    return `${v4}\n${v6}`
   })
 
   const lossPanelTooltip = computed(() => {
-    if (!pingStats.hasData.value) {
-      if (pingStats.loading.value)
-        return options.loadingPanelTooltipText?.loss ?? ''
-      return options.emptyPanelTooltipText?.loss ?? ''
-    }
-
-    const volatility = pingStats.avgVolatility.value > 0
-      ? `，平均波动 ${pingStats.avgVolatility.value.toFixed(2)}`
-      : ''
-    return `平均丢包 ${pingStats.avgLoss.value.toFixed(1)}%${volatility}`
+    const v4 = pingStats.hasV4Data.value ? `IPv4 平均丢包 ${pingStats.avgLossV4.value.toFixed(1)}%` : 'IPv4 暂无数据'
+    const v6 = pingStats.hasV6Data.value ? `IPv6 平均丢包 ${pingStats.avgLossV6.value.toFixed(1)}%` : 'IPv6 暂无数据'
+    return `${v4}\n${v6}`
   })
 
   return {
     pingStats,
     pingStatsEnabled,
-    latencyRenderBars,
-    lossRenderBars,
-    latencyDisplay,
-    lossDisplay,
+    ipv4LatencyRenderBars,
+    ipv4LossRenderBars,
+    ipv6LatencyRenderBars,
+    ipv6LossRenderBars,
+    ipv4LatencyDisplay,
+    ipv4LossDisplay,
+    ipv6LatencyDisplay,
+    ipv6LossDisplay,
     latencyPanelTooltip,
     lossPanelTooltip,
   }

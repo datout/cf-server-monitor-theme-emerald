@@ -6,6 +6,7 @@ import {
   buildAdminUrl,
   cfRequest,
   fetchAllServers,
+  fetchPingHistory,
   fetchSiteConfigs,
   getDisplayUuid,
   getRegisteredServerIds,
@@ -101,6 +102,7 @@ class InitManager {
         hours: latencyWindow?.hours,
       })
       await this.loadNodes()
+      void this.hydrateIpv6PingHistory()
       this.connectAllSockets()
       this.liveUpdateTimer = setInterval(() => {
         this.advanceLiveSamples()
@@ -158,6 +160,27 @@ class InitManager {
       this.appStore.connectionError = true
       throw error
     }
+  }
+
+  private async hydrateIpv6PingHistory(): Promise<void> {
+    const targets = this.nodesStore.nodes.filter((node) => {
+      if (!node.ipv6?.trim())
+        return false
+      return Object.keys(node.ping ?? {}).some(key => key.startsWith('node_'))
+    })
+
+    if (!targets.length)
+      return
+
+    await Promise.allSettled(targets.map(async (node) => {
+      try {
+        const { records } = await fetchPingHistory(node.uuid, 1)
+        this.nodesStore.hydratePingHistory(node.uuid, records)
+      }
+      catch {
+        // IPv6 history is supplemental; live WebSocket samples continue to work if history fetch fails.
+      }
+    }))
   }
 
   private connectAllSockets(): void {

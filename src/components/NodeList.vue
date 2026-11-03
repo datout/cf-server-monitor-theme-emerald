@@ -234,14 +234,14 @@ function getRowTransitionStyle(index: number): Record<string, string> {
                 </div>
               </div>
 
-              <!-- 三网和 BGP 实时延迟 -->
+              <!-- IPv4 / IPv6 实时延迟 -->
               <div v-else-if="col.key === 'latency'" class="flex items-center">
                 <NodePingListCell
                   :node="node"
                   role="button"
                   tabindex="0"
                   class="outline-none"
-                  :aria-label="`${node.name} 三网和 BGP 实时延迟`"
+                  :aria-label="`${node.name} IPv4 / IPv6 实时延迟`"
                   @click.stop="openPingDialog(node)"
                   @keydown.enter.stop.prevent="openPingDialog(node)"
                   @keydown.space.stop.prevent="openPingDialog(node)"
